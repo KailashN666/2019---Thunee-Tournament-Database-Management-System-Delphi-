@@ -1,0 +1,37 @@
+unit ManagerLogin_u;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, Manager_u;
+
+type
+  TfrmManagerLogin = class(TForm)
+    btnLogin: TButton;
+    edtPassword: TEdit;
+    edtUsername: TEdit;
+    lblUsername: TLabel;
+    lblPassword: TLabel;
+    pnlManager: TPanel;
+    procedure btnLoginClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmManagerLogin: TfrmManagerLogin;
+
+implementation
+
+{$R *.dfm}
+
+procedure TfrmManagerLogin.btnLoginClick(Sender: TObject);
+begin
+  MessageDlg('You have entered an incorrect username or password. Please re-enter your details.', mtError, mbOKCancel, 0);
+  frmManager.Show;
+end;
+
+end.

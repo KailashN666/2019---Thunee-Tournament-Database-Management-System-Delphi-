@@ -1,0 +1,30 @@
+object dmFinals: TdmFinals
+  OldCreateOrder = False
+  Height = 150
+  Width = 215
+  object conFinals: TADOConnection
+    Connected = True
+    ConnectionString = 
+      'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\Kailash\D' +
+      'esktop\Managing Thunee Phase 2\ManagingThunee.accdb;Mode=ReadWri' +
+      'te;Persist Security Info=False'
+    LoginPrompt = False
+    Mode = cmReadWrite
+    Provider = 'Microsoft.ACE.OLEDB.12.0'
+    Left = 80
+    Top = 16
+  end
+  object tblFinals: TADOTable
+    Active = True
+    Connection = conFinals
+    CursorType = ctStatic
+    TableName = 'Finals'
+    Left = 80
+    Top = 56
+  end
+  object dsFinals: TDataSource
+    DataSet = tblFinals
+    Left = 80
+    Top = 104
+  end
+end

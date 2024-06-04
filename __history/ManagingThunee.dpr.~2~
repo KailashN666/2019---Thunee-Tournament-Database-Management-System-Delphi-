@@ -1,0 +1,24 @@
+program ManagingThunee;
+
+uses
+  Vcl.Forms,
+  MainForm_u in 'MainForm_u.pas' {frmMainForm},
+  AdminLogin_u in 'AdminLogin_u.pas' {frmAdminLogin},
+  ManagerLogin_u in 'ManagerLogin_u.pas' {frmManagerLogin},
+  Admin_u in 'Admin_u.pas' {frmAdmin},
+  dmDatabase_u in 'dmDatabase_u.pas' {dmDatabase: TDataModule},
+  Manager_u in 'Manager_u.pas' {frmManager};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TfrmMainForm, frmMainForm);
+  Application.CreateForm(TfrmAdminLogin, frmAdminLogin);
+  Application.CreateForm(TfrmManagerLogin, frmManagerLogin);
+  Application.CreateForm(TfrmAdmin, frmAdmin);
+  Application.CreateForm(TdmDatabase, dmDatabase);
+  Application.CreateForm(TfrmManager, frmManager);
+  Application.Run;
+end.

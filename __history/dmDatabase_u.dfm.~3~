@@ -1,0 +1,31 @@
+object dmDatabase: TdmDatabase
+  OldCreateOrder = False
+  Height = 150
+  Width = 215
+  object ConTeamScores: TADOConnection
+    Connected = True
+    ConnectionString = 
+      'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\kaila\Des' +
+      'ktop\Tutions\Tutions\Grade 11\Kailash.N PAT (IT 2019)\Managing T' +
+      'hunee Phase 2\ManagingThunee.accdb;Mode=ReadWrite;Persist Securi' +
+      'ty Info=False'
+    LoginPrompt = False
+    Mode = cmReadWrite
+    Provider = 'Microsoft.ACE.OLEDB.12.0'
+    Left = 32
+    Top = 16
+  end
+  object tblTeamScores: TADOTable
+    Active = True
+    Connection = ConTeamScores
+    CursorType = ctStatic
+    TableName = 'TeamScoresTbl'
+    Left = 24
+    Top = 56
+  end
+  object dsTeamScores: TDataSource
+    DataSet = tblTeamScores
+    Left = 32
+    Top = 104
+  end
+end

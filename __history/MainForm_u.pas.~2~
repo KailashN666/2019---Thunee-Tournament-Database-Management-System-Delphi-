@@ -1,0 +1,39 @@
+unit MainForm_u;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, AdminLogin_u, ManagerLogin_u;
+
+type
+  TfrmMainForm = class(TForm)
+    pnlTitle: TPanel;
+    rgpChoice: TRadioGroup;
+    procedure rgpChoiceClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmMainForm: TfrmMainForm;
+
+implementation
+
+{$R *.dfm}
+
+procedure TfrmMainForm.rgpChoiceClick(Sender: TObject);
+begin
+  if rgpChoice.ItemIndex = 0 then
+  begin
+    frmManagerLogin.Show;
+  end
+  else
+  begin
+    frmAdminLogin.Show;
+  end;
+end;
+
+end.

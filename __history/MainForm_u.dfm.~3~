@@ -1,0 +1,43 @@
+object frmMainForm: TfrmMainForm
+  Left = 0
+  Top = 0
+  Caption = 'Main Form'
+  ClientHeight = 350
+  ClientWidth = 500
+  Color = clGradientActiveCaption
+  Font.Charset = ANSI_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -16
+  Font.Name = 'Microsoft Himalaya'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poDesktopCenter
+  PixelsPerInch = 96
+  TextHeight = 16
+  object pnlTitle: TPanel
+    Left = 0
+    Top = 0
+    Width = 505
+    Height = 41
+    Caption = 'Managing Thunee'
+    Color = clSkyBlue
+    ParentBackground = False
+    TabOrder = 0
+  end
+  object rgpChoice: TRadioGroup
+    Left = 96
+    Top = 112
+    Width = 289
+    Height = 169
+    Caption = 'Welcome! Are you a Manager, Administrator or require Help?'
+    Color = clSkyBlue
+    Items.Strings = (
+      'I am a Manager.'
+      'I am an Admin.'
+      'I forgot the rules of Thunee.')
+    ParentBackground = False
+    ParentColor = False
+    TabOrder = 1
+    OnClick = rgpChoiceClick
+  end
+end

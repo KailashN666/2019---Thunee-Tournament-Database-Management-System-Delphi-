@@ -1,0 +1,1226 @@
+unit Manager_u;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.DB, Vcl.StdCtrls, Vcl.Grids,
+  Vcl.DBGrids, Vcl.ExtCtrls, dmTeams_u, dmPlayers_u, Vcl.ComCtrls, Math, DateUtils, dmSemiFinals_u, dmFinals_u;
+
+type
+  TfrmManager = class(TForm)
+    pnlManager: TPanel;
+    dbGridTeam: TDBGrid;
+    grpManagerTeam: TGroupBox;
+    btnRegisterNewTeam: TButton;
+    grpCurrentTournament: TGroupBox;
+    TournamentDisplay: TRichEdit;
+    btnUpdateScores: TButton;
+    btnNewTournament: TButton;
+    grpNewTeam: TGroupBox;
+    edtSurname: TEdit;
+    edtName: TEdit;
+    edtDOB: TEdit;
+    btnConfirm: TButton;
+    lblSurname: TLabel;
+    lblName: TLabel;
+    lblDOB: TLabel;
+    grp1: TGroupBox;
+    grp2: TGroupBox;
+    grp3: TGroupBox;
+    grp4: TGroupBox;
+    grp1lbl: TLabel;
+    grp2lbl: TLabel;
+    grp2edt: TEdit;
+    grp1edt: TEdit;
+    grp3lbl: TLabel;
+    grp3edt: TEdit;
+    grp4lbl: TLabel;
+    grp4edt: TEdit;
+    btnSubmitSemi: TButton;
+    btnSubmitFinals: TButton;
+    btnNextRound: TButton;
+    rgpSort: TRadioGroup;
+    rgpFilter: TRadioGroup;
+    btnMostTournamentsWon: TButton;
+    btnMostTournamentsEnt: TButton;
+    btnSearchForTeam: TButton;
+    btnShowStats: TButton;
+    procedure btnRegisterNewTeamClick(Sender: TObject);
+    Procedure ReadFromDatabase;
+    Procedure TeamUpdateStats(sTeamName : String; iScore : Integer);
+    Procedure AddScoreToSemiFinals (sTeamName : String; iScore : Integer);
+    Procedure AddScoreToFinals (sTeamName : String; iScore : Integer);
+    Function CheckIfTournamentInProgress : Boolean;
+    Function DetermineTournamentWinner : String;
+    Procedure AddToSemiFinalsDatabase (TeamName : String; MatchNum : Integer);
+    procedure btnConfirmClick(Sender: TObject);
+    Function CheckIfTeamNameIsPresent (sLine : String) : Boolean;
+    procedure btnNewTournamentClick(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure btnUpdateScoresClick(Sender: TObject);
+    procedure btnSubmitSemiClick(Sender: TObject);
+    procedure btnSubmitFinalsClick(Sender: TObject);
+    procedure btnNextRoundClick(Sender: TObject);
+    procedure rgpSortClick(Sender: TObject);
+    procedure rgpFilterClick(Sender: TObject);
+    procedure btnMostTournamentsWonClick(Sender: TObject);
+    procedure btnMostTournamentsEntClick(Sender: TObject);
+    procedure btnSearchForTeamClick(Sender: TObject);
+    procedure btnShowStatsClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmManager: TfrmManager;
+  sP1Name, sP1Surname, sP1DOB : String;
+  DataFile : TextFile;
+  sArrSemiFinalTeam : array [1..4] of String;
+  iArrSemiFinalScore : Array [1..4] of Integer;
+  sArrFinalTeam : Array [1..2] of String;
+  iArrFinalTeam : Array [1..2] of Integer;
+
+implementation
+
+{$R *.dfm}
+
+
+
+procedure TfrmManager.AddScoreToFinals(sTeamName: String; iScore: Integer);
+var
+  I: Integer;
+begin
+  dmFinals.tblFinals.First;
+
+  for I := 1 to dmFinals.tblFinals.RecordCount do
+  begin
+    if dmFinals.tblFinals['TeamName'] = sTeamName then
+    Begin
+      dmFinals.tblFinals.Edit;
+      dmFinals.tblFinals['Score'] := iScore;
+      dmFinals.tblFinals.Post;
+      Break
+    End;
+
+    dmFinals.tblFinals.Next;
+  end;
+end;
+
+procedure TfrmManager.AddScoreToSemiFinals(sTeamName: String; iScore: Integer);
+Var
+  I : Integer;
+begin
+  dmSemiFinals.tblSemiFinals.First;
+
+  for I := 1 to dmSemiFinals.tblSemiFinals.RecordCount do
+  begin
+    if dmSemiFinals.tblSemiFinals['TeamName'] = sTeamName then
+    Begin
+      dmSemiFinals.tblSemiFinals.Edit;
+      dmSemiFinals.tblSemiFinals['Score'] := iScore;
+      dmSemiFinals.tblSemiFinals.Post;
+      Break
+    End;
+
+    dmSemiFinals.tblSemiFinals.Next;
+  end;
+
+end;
+
+procedure TfrmManager.AddToSemiFinalsDatabase(TeamName: String;
+  MatchNum: Integer);
+begin
+  dmSemiFinals.tblSemiFinals.Last;
+  dmSemiFinals.tblSemiFinals.Insert;
+
+  dmSemiFinals.tblSemiFinals['TeamName'] := TeamName;
+  dmSemiFinals.tblSemiFinals['MatchNumber'] := MatchNum;
+
+  dmSemiFinals.tblSemiFinals.Post;
+end;
+
+procedure TfrmManager.btnConfirmClick(Sender: TObject);
+Var
+  bCheck : Boolean;
+  sP2Name, sP2Surname, sP2DOB, sP1ID, sP2ID, sTeamName, sTeamID : String;
+begin
+  if btnConfirm.Caption = 'Confirm Player 1 Details' then
+  Begin
+    sP1Name := edtName.Text;
+    sP1Surname := edtSurname.Text;
+    sP1DOB := edtDOB.Text;
+
+    if (sP1Name <> '') and (sP1Surname <> '') and (sP1DOB <> '') then
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      MessageDlg('Valid player information for player one has been provided successfully. Please enter the details for Player two.', mtInformation, mbOKCancel, 0);
+      grpNewTeam.Caption := 'Player 2 Details';
+      btnConfirm.Caption := 'Confirm Player 2 Details';
+    end
+    else
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      edtName.SetFocus;
+
+      MessageDlg('The details that you have entered have not been entered correctly, Please re-enter the Player details.', mtError, mbOKCancel, 0);
+    end;
+  End
+  else
+  begin
+    sP2Name := edtName.Text;
+    sP2Surname := edtSurname.Text;
+    sP2DOB := edtDOB.Text;
+
+    if (sP2Name <> '') and (sP2Surname <> '') and (sP2DOB <> '') then
+    Begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+
+      MessageDlg('Congratulations! Details for both players of the team has been entered correctly. Please be aware that automated Player IDs have been generated for both Players. You will now have to enter a Team Name.', mtInformation, mbOKCancel, 0);
+
+      if MessageDlg('Entering a Team Name is very important because once it is entered it can not be changed. Make sure that the team name is not the same as other team names. Do you accept the terms?', mtConfirmation, mbYesNo, 0) = mrYes then
+      Begin
+        sP1ID := sP1Name[1] + sP1Surname[1] + IntToStr(RandomRange(100, 1000));
+        sP2ID := sP2Name[1] + sP2Surname[1] + IntToStr(RandomRange(100, 1000));
+
+        sTeamName := InputBox('Team Name','Please input a unique Team Name for the new Team.','');
+        sTeamName := Trim(sTeamName);
+
+        if CheckIfTeamNameIsPresent(sTeamName) = True then
+        Begin
+          bCheck := True;
+
+          repeat
+            MessageDlg('The Team Name already exists in the database, Please enter a valid Team Name', mtError, mbOKCancel, 0);
+            sTeamName := InputBox('Team Name','Please input a unique Team Name for the new Team.','');
+            sTeamName := Trim(sTeamName);
+            bCheck := CheckIfTeamNameIsPresent(sTeamName);
+          until (bCheck = False);
+        End;
+
+        MessageDlg('Congratulations! The Team name is valid. The details of the Team will now be entered into the Database.', mtInformation, mbOKCancel, 0);
+
+        sTeamID := sTeamName[1] + sTeamName[Length(sTeamName)] + sTeamName[Length(sTeamName)-2] + IntToStr(RandomRange(100, 1000));
+
+        dmTeams.tblTeams.Last;
+        dmTeams.tblTeams.Insert;
+
+        dmTeams.tblTeams['TeamID'] := sTeamID;
+        dmTeams.tblTeams['TeamName'] := sTeamName;
+        dmTeams.tblTeams['GamesWon'] := 0;
+        dmTeams.tblTeams['MinigamesWon'] := 0;
+        dmTeams.tblTeams['MinigamesLost'] := 0;
+        dmTeams.tblTeams['TournamentsWon'] := 0;
+        dmTeams.tblTeams['TournamentsEntered'] := 0;
+        dmTeams.tblTeams['DateRegistered'] := Now;
+
+        dmTeams.tblTeams.Post;
+        grpNewTeam.Enabled := False;
+        btnConfirm.Caption := 'Confirm Player 1 Details';
+        grpNewTeam.Caption := 'Adding a new Team';
+        grpNewTeam.Enabled := False;
+        dbGridTeam.Refresh;
+
+        dmPlayers.tblPlayers.Last;
+        dmPlayers.tblPlayers.Insert;
+
+        dmPlayers.tblPlayers['TeamName'] := sTeamName;
+        dmPlayers.tblPlayers['PlayerID'] := sP1ID;
+        dmPlayers.tblPlayers['PlayerName'] := sP1Name;
+        dmPlayers.tblPlayers['PlayerSurname'] := sP1Surname;
+        dmPlayers.tblPlayers['PlayerDOB'] := sP1DOB;
+
+        dmPlayers.tblPlayers.Post;
+
+        dmPlayers.tblPlayers.Insert;
+
+        dmPlayers.tblPlayers['TeamName'] := sTeamName;
+        dmPlayers.tblPlayers['PlayerID'] := sP2ID;
+        dmPlayers.tblPlayers['PlayerName'] := sP2Name;
+        dmPlayers.tblPlayers['PlayerSurname'] := sP2Surname;
+        dmPlayers.tblPlayers['PlayerDOB'] := sP2DOB;
+
+        dmPlayers.tblPlayers.Post;
+
+        MessageDlg('The Team has been added successfully!', mtInformation, mbOKCancel, 0);
+
+        grpNewTeam.Hide;
+      End
+      else
+      begin
+        MessageDlg('The team will not be entered into the database until a Team Name is entered. Please re-enter Team Details.', mtInformation, mbOKCancel, 0);
+        btnConfirm.Caption := 'Confirm Player 1 Details';
+        grpNewTeam.Caption := 'Adding a New Team';
+      end;
+
+    End
+    else
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      edtName.SetFocus;
+
+      MessageDlg('The details that you have entered have not been entered correctly, Please re-enter the Player details.', mtError, mbOKCancel, 0);
+    end;
+  end;
+
+
+end;
+
+procedure TfrmManager.btnMostTournamentsEntClick(Sender: TObject);
+var
+  I: Integer;
+  iHighest, iCount : Integer;
+  sTeamName : String;
+  iMultipleTeams : Integer;
+begin
+  dmTeams.tblTeams.Sort := '';
+  dmTeams.tblTeams.Filtered := False;
+  ReadFromDatabase;
+  dmTeams.tblTeams.Refresh;
+
+  dmTeams.tblTeams.First;
+  iHighest := dmTeams.tblTeams['TournamentsEntered'];
+  sTeamName := dmTeams.tblTeams['TeamName'];
+  iCount := 1;
+  dmTeams.tblTeams.Next;
+
+  for I := 2 to dmTeams.tblTeams.RecordCount do
+  begin
+    if iHighest = dmTeams.tblTeams['TournamentsEntered'] then
+    Begin
+      Inc(iCount);
+    End;
+
+    if iHighest < dmTeams.tblTeams['TournamentsEntered'] then
+    Begin
+      iHighest := dmTeams.tblTeams['TournamentsEntered'];
+      sTeamName := dmTeams.tblTeams['TeamName'];
+      iCount := 1;
+    End;
+
+    dmTeams.tblTeams.Next;
+  end;
+
+  dmTeams.tblTeams.First;
+
+  if iCount > 1 then
+  Begin
+    sTeamName := '';
+    iMultipleTeams := 1;
+    iHighest := dmTeams.tblTeams['TournamentsEntered'];
+    sTeamName := dmTeams.tblTeams['TeamName'];
+    dmTeams.tblTeams.Next;
+
+    for I := 2 to dmTeams.tblTeams.RecordCount do
+    begin
+      if iHighest < dmTeams.tblTeams['TournamentsEntered'] then
+      Begin
+        sTeamName := dmTeams.tblTeams['TeamName'];
+        iHighest := dmTeams.tblTeams['TournamentsEntered'];
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    dmTeams.tblTeams.First;
+
+    Repeat
+      if (iHighest = dmTeams.tblTeams['TournamentsEntered']) and (sTeamName <> dmTeams.tblTeams['TeamName']) then
+      Begin
+        sTeamName := sTeamName + ', ' + dmTeams.tblTeams['TeamName'];
+        Inc(iMultipleTeams);
+      End;
+
+      dmTeams.tblTeams.Next;
+    Until(iMultipleTeams = iCount);
+
+    if iHighest = 1 then
+    Begin
+      MessageDlg('The teams that have entered the most amount of Tournaments are: ' + sTeamName + ' all with a level number of ' + IntToStr(iHighest) + ' Tournament entered.', mtInformation, mbOKCancel, 0);
+    End
+    Else
+    Begin
+      MessageDlg('The teams that have entered the most amount of Tournaments are: ' + sTeamName + ' all with a level number of ' + IntToStr(iHighest) + ' Tournaments entered.', mtInformation, mbOKCancel, 0);
+    End;
+
+    dmTeams.tblTeams.First;
+  End
+  Else
+  Begin
+    iHighest := dmTeams.tblTeams['TournamentsEntered'];
+    sTeamName := dmTeams.tblTeams['TeamName'];
+    dmTeams.tblTeams.Next;
+
+    for I := 2 to dmTeams.tblTeams.RecordCount do
+    begin
+      if iHighest < dmTeams.tblTeams['TournamentsEntered'] then
+      Begin
+        sTeamName := dmTeams.tblTeams['TeamName'];
+        iHighest := dmTeams.tblTeams['TournamentsEntered'];
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    if iHighest = 1 then
+    Begin
+      MessageDlg('The team that has entered the most amount of Tournaments is: ' + sTeamName + ' with a number of ' + IntToStr(iHighest) + ' Tournament entered.', mtInformation, mbOKCancel, 0);
+    End
+    Else
+    Begin
+      MessageDlg('The team that has entered the most amount of Tournaments is: ' + sTeamName + ' with a number of ' + IntToStr(iHighest) + ' Tournaments entered.', mtInformation, mbOKCancel, 0);
+    End;
+
+    dmTeams.tblTeams.First;
+  End;
+end;
+
+procedure TfrmManager.btnMostTournamentsWonClick(Sender: TObject);
+var
+  I: Integer;
+  iHighest, iCount : Integer;
+  sTeamName : String;
+  iMultipleTeams : Integer;
+begin
+  dmTeams.tblTeams.Sort := '';
+  dmTeams.tblTeams.Filtered := False;
+  ReadFromDatabase;
+  dmTeams.tblTeams.Refresh;
+
+  dmTeams.tblTeams.First;
+  iHighest := dmTeams.tblTeams['TournamentsWon'];
+  sTeamName := dmTeams.tblTeams['TeamName'];
+  iCount := 1;
+  dmTeams.tblTeams.Next;
+
+  for I := 2 to dmTeams.tblTeams.RecordCount do
+  begin
+    if iHighest = dmTeams.tblTeams['TournamentsWon'] then
+    Begin
+      Inc(iCount);
+    End;
+
+    if iHighest < dmTeams.tblTeams['TournamentsWon'] then
+    Begin
+      iHighest := dmTeams.tblTeams['TournamentsWon'];
+      sTeamName := dmTeams.tblTeams['TeamName'];
+      iCount := 1;
+    End;
+
+    dmTeams.tblTeams.Next;
+  end;
+
+  dmTeams.tblTeams.First;
+
+  if iCount > 1 then
+  Begin
+    sTeamName := '';
+    iMultipleTeams := 1;
+    iHighest := dmTeams.tblTeams['TournamentsWon'];
+    sTeamName := dmTeams.tblTeams['TeamName'];
+    dmTeams.tblTeams.Next;
+
+    for I := 2 to dmTeams.tblTeams.RecordCount do
+    begin
+      if iHighest < dmTeams.tblTeams['TournamentsWon'] then
+      Begin
+        sTeamName := dmTeams.tblTeams['TeamName'];
+        iHighest := dmTeams.tblTeams['TournamentsWon'];
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    dmTeams.tblTeams.First;
+
+    Repeat
+      if (iHighest = dmTeams.tblTeams['TournamentsWon']) and (sTeamName <> dmTeams.tblTeams['TeamName']) then
+      Begin
+        sTeamName := sTeamName + ', ' + dmTeams.tblTeams['TeamName'];
+        Inc(iMultipleTeams);
+      End;
+
+      dmTeams.tblTeams.Next;
+    Until(iMultipleTeams = iCount);
+
+    if iHighest = 1 then
+    Begin
+      MessageDlg('The teams that have won the most amount of Tournaments are: ' + sTeamName + ' all with a level score of ' + IntToStr(iHighest) + ' Tournament won.', mtInformation, mbOKCancel, 0);
+    End
+    Else
+    Begin
+      MessageDlg('The teams that have won the most amount of Tournaments are: ' + sTeamName + ' all with a level score of ' + IntToStr(iHighest) + ' Tournaments won.', mtInformation, mbOKCancel, 0);
+    End;
+
+    dmTeams.tblTeams.First;
+  End
+  Else
+  Begin
+    iHighest := dmTeams.tblTeams['TournamentsWon'];
+    sTeamName := dmTeams.tblTeams['TeamName'];
+    dmTeams.tblTeams.Next;
+
+    for I := 2 to dmTeams.tblTeams.RecordCount do
+    begin
+      if iHighest < dmTeams.tblTeams['TournamentsWon'] then
+      Begin
+        sTeamName := dmTeams.tblTeams['TeamName'];
+        iHighest := dmTeams.tblTeams['TournamentsWon'];
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    if iHighest = 1 then
+    Begin
+      MessageDlg('The team that has won the most amount of Tournaments is: ' + sTeamName + ' with a score of ' + IntToStr(iHighest) + ' Tournament won.', mtInformation, mbOKCancel, 0);
+    End
+    Else
+    Begin
+      MessageDlg('The team that has won the most amount of Tournaments is: ' + sTeamName + ' with a score of ' + IntToStr(iHighest) + ' Tournaments won.', mtInformation, mbOKCancel, 0);
+    End;
+
+    dmTeams.tblTeams.First;
+  End;
+
+end;
+
+procedure TfrmManager.btnNewTournamentClick(Sender: TObject);
+Var
+  sTeamName, sAllTeamNames : String;
+  I, iCounter, iMatchNum : Integer;
+  bCheck, bStop : Boolean;
+
+begin
+  if CheckIfTournamentInProgress = True then
+  Begin
+    dmFinals.tblFinals.First;
+    if dmFinals.tblFinals.FieldByName('Score').AsInteger > 0 then
+    Begin
+      dmSemiFinals.tblSemiFinals.First;
+      for I := 1 to dmSemiFinals.tblSemiFinals.RecordCount do
+      begin
+        dmSemiFinals.tblSemiFinals.Delete;
+        dmSemiFinals.tblSemiFinals.Next;
+      end;
+
+      if dmFinals.tblFinals.RecordCount > 0 then
+      Begin
+        dmFinals.tblFinals.First;
+
+        for I := 1 to dmFinals.tblFinals.RecordCount do
+        begin
+          dmFinals.tblFinals.Delete;
+          dmFinals.tblFinals.Next;
+        end;
+      End;
+
+      ReadFromDatabase;
+
+      btnNewTournament.Click;
+    End
+    Else
+    Begin
+      If MessageDlg('There is a current tournament in progress, are you sure you want to start a new tournament and discard progress on the current tournament?', mtWarning, mbYesNo, 0) = mrYes Then
+      begin
+        dmSemiFinals.tblSemiFinals.First;
+        for I := 1 to dmSemiFinals.tblSemiFinals.RecordCount do
+        begin
+          dmSemiFinals.tblSemiFinals.Delete;
+          dmSemiFinals.tblSemiFinals.Next;
+        end;
+
+
+        if dmFinals.tblFinals.RecordCount > 0 then
+        Begin
+          dmFinals.tblFinals.First;
+
+          for I := 1 to dmFinals.tblFinals.RecordCount do
+          begin
+            dmFinals.tblFinals.Delete;
+            dmFinals.tblFinals.Next;
+          end;
+        End;
+
+        ReadFromDatabase;
+
+        btnNewTournament.Click;
+      end
+      else
+      begin
+        MessageDlg('You may continue with the current tournament.', mtInformation, mbOKCancel, 0);
+      end;
+    End;
+
+  End
+  Else
+  Begin
+    if MessageDlg('You will now be required to enter the 4 teams participating in the tournament, will these requirements be met? Please be cautious of how names are entered, be sure of the Team name typed before entering it.', mtConfirmation, mbYesNo,0) = mrYes then
+    Begin
+      iCounter := 0;
+      iMatchNum := 1;
+      bStop := False;
+      sAllTeamNames := '';
+
+      while (iCounter < 5) and (bStop = False)  do
+      Begin
+        sTeamName := InputBox('Input','Please enter a Team name that has been registered.','');
+        sTeamName := Trim(sTeamName);
+
+        if CheckIfTeamNameIsPresent(sTeamName) = False then
+        Begin
+          repeat
+            bCheck := False;
+            MessageDlg('The Team Name does not exist in the database, Please enter a valid Team Name', mtError, mbOKCancel, 0);
+            sTeamName := InputBox('Input','Please enter a team name that has been registered.','');
+            sTeamName := Trim(sTeamName);
+            bCheck := CheckIfTeamNameIsPresent(sTeamName);
+          until (bCheck = True);
+        end;
+
+        Inc(iCounter);
+
+        if iCounter = 3 then
+        Begin
+          iMatchNum := 2;
+        End;
+
+        if iCounter = 4 then
+        Begin
+          bStop := True;
+        End;
+
+        AddToSemiFinalsDatabase(sTeamName, iMatchNum);
+
+      End;
+
+      ReadFromDatabase;
+    End
+    Else
+    Begin
+      MessageDlg('Please gather up your Team names before starting a new tournament.' , mtWarning, mbOKCancel, 0);
+    End;
+  End;
+end;
+
+procedure TfrmManager.btnNextRoundClick(Sender: TObject);
+Var
+  sWinner1, sWinner2 : String;
+  I, iCount: Integer;
+  K: Integer;
+begin
+  if MessageDlg('Are you certain the results are accurate? No changes can be made after this. Winners for the round will be determined.', mtConfirmation, mbYesNo, 0) = mrYes then
+  Begin
+    btnSubmitSemi.Enabled := False;
+    btnUpdateScores.Enabled := False;
+
+    ReadFromDatabase;
+
+    if iArrSemiFinalScore[1] > iArrSemiFinalScore[2] then
+    Begin
+      sWinner1 := sArrSemiFinalTeam[1];
+    End
+    Else
+    Begin
+      sWinner1 := sArrSemiFinalTeam[2];
+    End;
+
+    if iArrSemiFinalScore[3] > iArrSemiFinalScore[4] then
+    Begin
+      sWinner2 := sArrSemiFinalTeam[3];
+    End
+    Else
+    Begin
+      sWinner2 := sArrSemiFinalTeam[4];
+    End;
+
+    MessageDlg('The winning teams the first round was ' + sWinner1 +' and ' + sWinner2 + ' respectively. These are the two teams that will be added to the final round.', mtInformation, mbOKCancel, 0);
+
+    for I := 1 to 4 do
+    begin
+      TeamUpdateStats(sArrSemiFinalTeam[I], iArrSemiFinalScore[I]);
+    end;
+
+    dmTeams.tblTeams.First;
+
+    for I := 1 to dmTeams.tblTeams.RecordCount do
+    begin
+      if dmTeams.tblTeams['TeamName'] = sWinner1 Then
+      Begin
+        dmTeams.tblTeams.Edit;
+        dmTeams.tblTeams['GamesWon'] := dmTeams.tblTeams.FieldByName('GamesWon').AsInteger +1;
+        dmTeams.tblTeams.Post;
+        Break
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    for I := 1 to dmTeams.tblTeams.RecordCount do
+    begin
+
+      if dmTeams.tblTeams['TeamName'] = sWinner2 Then
+      Begin
+        dmTeams.tblTeams.Edit;
+        dmTeams.tblTeams['GamesWon'] := dmTeams.tblTeams.FieldByName('GamesWon').AsInteger +1;
+        dmTeams.tblTeams.Post;
+        Break
+      End;
+
+      dmTeams.tblTeams.Next;
+    end;
+
+    dmFinals.tblFinals.First;
+    dmFinals.tblFinals.Insert;
+    dmFinals.tblFinals['TeamName'] := sWinner1;
+    dmFinals.tblFinals.Post;
+    dmFinals.tblFinals.Insert;
+    dmFinals.tblFinals['TeamName'] := sWinner2;
+    dmFinals.tblFinals.Post;
+
+    dbGridTeam.Refresh;
+    ReadFromDatabase;
+    btnNextRound.Enabled := False;
+  End
+  Else
+  Begin
+    MessageDlg('Please be make sure all results captured are accurate.', mtInformation, mbOKCancel, 0);
+  End;
+end;
+
+procedure TfrmManager.btnRegisterNewTeamClick(Sender: TObject);
+begin
+  if MessageDlg('When you add a new team to the database, you will be required to enter the details of two players as there are two players in a team, is this okay?', mtConfirmation, mbYesNo, 0)  = mrYes then
+  Begin
+    grpNewTeam.Enabled := True;
+    grpNewTeam.Show;
+    grpNewTeam.Caption := 'Player 1 Details';
+  End
+  else
+  Begin
+    grpNewTeam.Enabled := False;
+    grpNewTeam.Hide;
+    grpNewTeam.Caption := 'Adding a new Team';
+  End;
+end;
+
+procedure TfrmManager.btnSearchForTeamClick(Sender: TObject);
+Var
+  sTeamName : String;
+  bFound : Boolean;
+  I: Integer;
+begin
+  sTeamName := InputBox('Search','Input the Team Name you would like to search for.','');
+  dmTeams.tblTeams.First;
+  bFound := False;
+
+  for I := 1 to dmTeams.tblTeams.RecordCount do
+  begin
+    if UpperCase(sTeamName) = UpperCase(dmTeams.tblTeams['TeamName']) then
+    Begin
+      bFound := True;
+      MessageDlg('The team has been registered.', mtInformation, mbOKCancel, 0);
+      Break
+    End;
+
+    dmTeams.tblTeams.Next;
+  end;
+
+  if bFound = False then
+  Begin
+    MessageDlg('Unfortunately, The name has not been registered.' , mtWarning, mbOKCancel, 0);
+  End;
+
+  dmTeams.tblTeams.First;
+  dmTeams.tblTeams.Sort := '';
+  rgpSort.Visible := False;
+  rgpFilter.Visible := False;
+  btnMostTournamentsWon.Visible := False;
+  btnMostTournamentsEnt.Visible := False;
+  btnSearchForTeam.Visible := False;
+  btnShowStats.Visible := True;
+  //Or use Function CheckIfTeamNameIsPresent(sTeamName);
+end;
+
+procedure TfrmManager.btnShowStatsClick(Sender: TObject);
+begin
+  btnShowStats.Visible := False;
+  rgpSort.Visible := True;
+  rgpFilter.Visible := True;
+  btnMostTournamentsWon.Visible := True;
+  btnMostTournamentsEnt.Visible := True;
+  btnSearchForTeam.Visible := True;
+end;
+
+procedure TfrmManager.btnSubmitFinalsClick(Sender: TObject);
+Var
+  I: Integer;
+  sTournamentWinner : String;
+begin
+  if (grp1edt.Text = '') or (grp2edt.Text = '') then
+  Begin
+    MessageDlg('The results have not been entered correctly, please enter valid results.', mtWarning, mbOKCancel, 0);
+  End
+  Else
+  Begin
+    If MessageDlg('Are the results entered accurate? No changes can be made after this. The winner of the Tournament will be decided upon the entry of these results.', mtConfirmation, mbYesNo, 0) = mrYes Then
+    Begin
+      btnUpdateScores.Enabled := False;
+
+      AddScoreToFinals(grp1.Caption, StrToInt(grp1edt.Text));
+      AddScoreToFinals(grp2.Caption, StrToInt(grp2edt.Text));
+
+      ReadFromDatabase;
+
+      grp1.Hide;
+      grp1.Caption := '';
+      grp1edt.Text := '';
+
+      grp2.Hide;
+      grp2.Caption := '';
+      grp2edt.Text := '';
+
+      sTournamentWinner := DetermineTournamentWinner;
+
+      MessageDlg('The winner of the Tournament is: ' + sTournamentWinner + '! Congratulations to the winning Team.' , mtInformation, mbOKCancel, 0);
+
+      dmTeams.tblTeams.First;
+
+      for I := 1 to dmTeams.tblTeams.RecordCount do
+      begin
+        if dmTeams.tblTeams['TeamName'] = sArrFinalTeam[1] then
+        Begin
+          dmTeams.tblTeams.Edit;
+          dmTeams.tblTeams['MinigamesWon'] := dmTeams.tblTeams.FieldByName('MinigamesWon').AsInteger + iArrFinalTeam[1];
+          dmTeams.tblTeams['MinigamesLost'] := dmTeams.tblTeams.FieldByName('MinigamesLost').AsInteger + (12 - iArrFinalTeam[1]);
+          dmTeams.tblTeams.Post;
+          Break
+        End;
+
+        dmTeams.tblTeams.Next;
+      end;
+
+      for I := 1 to dmTeams.tblTeams.RecordCount do
+      begin
+
+        if dmTeams.tblTeams['TeamName'] = sArrFinalTeam[2] then
+        Begin
+          dmTeams.tblTeams.Edit;
+          dmTeams.tblTeams['MinigamesWon'] := dmTeams.tblTeams.FieldByName('MinigamesWon').AsInteger + iArrFinalTeam[2];
+          dmTeams.tblTeams['MinigamesLost'] := dmTeams.tblTeams.FieldByName('MinigamesLost').AsInteger + (12 - iArrFinalTeam[2]);
+          dmTeams.tblTeams.Post;
+          Break
+        End;
+
+        dmTeams.tblTeams.Next;
+      end;
+
+      dmTeams.tblTeams.First;
+
+      for I := 1 to dmTeams.tblTeams.RecordCount do
+      begin
+        if dmTeams.tblTeams['TeamName'] = sTournamentWinner Then
+        Begin
+          dmTeams.tblTeams.Edit;
+          dmTeams.tblTeams['GamesWon'] := dmTeams.tblTeams.FieldByName('GamesWon').AsInteger +1;
+          dmTeams.tblTeams['TournamentsWon'] := dmTeams.tblTeams.FieldByName('TournamentsWon').AsInteger + 1;
+          dmTeams.tblTeams.Post;
+          Break
+        End;
+
+        dmTeams.tblTeams.Next;
+      end;
+
+      ReadFromDatabase;
+    End
+    Else
+    Begin
+      MessageDlg('Please enter the results accurately.', mtInformation, mbOKCancel, 0);
+    End;
+  End;
+
+end;
+
+procedure TfrmManager.btnSubmitSemiClick(Sender: TObject);
+begin
+  if (grp1edt.Text = '') or (grp2edt.Text = '') or (grp3edt.Text = '') or (grp4edt.Text = '') then
+  Begin
+    MessageDlg('The results have not been entered correctly, please enter valid results.', mtWarning, mbOKCancel, 0);
+  End
+  Else
+  Begin
+    ReadFromDatabase;
+
+    AddScoreToSemiFinals(grp1.Caption, StrToInt(grp1edt.Text));
+    AddScoreToSemiFinals(grp2.Caption, StrToInt(grp2edt.Text));
+    AddScoreToSemiFinals(grp3.Caption, StrToInt(grp3edt.Text));
+    AddScoreToSemiFinals(grp4.Caption, StrToInt(grp4edt.Text));
+
+    grp1.Hide;
+    grp1.Caption := '';
+    grp1edt.Text := '';
+
+    grp2.Hide;
+    grp2.Caption := '';
+    grp2edt.Text := '';
+
+    grp3.Hide;
+    grp3.Caption := '';
+    grp3edt.Text := '';
+
+    grp4.Hide;
+    grp4.Caption := '';
+    grp4edt.Text := '';
+
+    btnSubmitSemi.Enabled := False;
+    ReadFromDatabase;
+
+  End;
+end;
+
+procedure TfrmManager.btnUpdateScoresClick(Sender: TObject);
+begin
+  if MessageDlg('This option requires you to enter the fixture results into the database. Be sure to click the submit button when you have completed entering the results.', mtConfirmation, mbOKCancel, 0) = mrOk then
+  Begin
+    if dmFinals.tblFinals.RecordCount = 0 then
+    Begin
+      grp1.Show;
+      grp1.Caption := sArrSemiFinalTeam[1];
+
+      grp2.Show;
+      grp2.Caption := sArrSemiFinalTeam[2];
+
+      grp3.Show;
+      grp3.Caption := sArrSemiFinalTeam[3];
+
+      grp4.Show;
+      grp4.Caption := sArrSemiFinalTeam[4];
+
+      btnSubmitSemi.Enabled := True;
+      btnUpdateScores.Enabled := False;
+
+      ReadFromDatabase;
+    End
+    Else
+    Begin
+      grp1.Show;
+      grp1.Caption := sArrFinalTeam[1];
+
+      grp2.Show;
+      grp2.Caption := sArrFinalTeam[2];
+
+      btnSubmitFinals.Enabled := True;
+      btnUpdateScores.Enabled := False;
+
+      ReadFromDatabase;
+    End;
+  End
+  else
+  begin
+    MessageDlg('Please make sure you have the fixture results to be entered, the re-click the button.', mtInformation, mbOKCancel, 0);
+  end;
+
+end;
+
+function TfrmManager.CheckIfTeamNameIsPresent(sLine: String): Boolean;
+var
+  I: Integer;
+  bPresent : Boolean;
+begin
+  dmTeams.tblTeams.First;
+  bPresent := False;
+
+  while (bPresent = False) and (not dmTeams.tblTeams.Eof) do
+  Begin
+    if sLine = dmTeams.tblTeams['TeamName'] then
+    begin
+      bPresent := True;
+    end;
+
+    dmTeams.tblTeams.Next;
+  End;
+
+  dmTeams.tblTeams.First;
+
+  if bPresent = False then
+  Begin
+    Result := False;
+  End
+  else
+  Begin
+    Result := True;
+  End;
+end;
+
+function TfrmManager.CheckIfTournamentInProgress: Boolean;
+Var
+  TempResult : Boolean;
+begin
+  if (dmSemiFinals.tblSemiFinals.RecordCount = 0) and (dmFinals.tblFinals.RecordCount = 0) then
+  Begin
+    TempResult := False;
+  End
+  Else
+  Begin
+    TempResult := True;
+  End;
+
+  Result := TempResult;
+end;
+
+function TfrmManager.DetermineTournamentWinner: String;
+begin
+  if iArrFinalTeam[1] > iArrFinalTeam[2] then
+  Begin
+    Result := sArrFinalTeam[1];
+  End
+  Else
+  Begin
+    Result := sArrFinalTeam[2];
+  End;
+end;
+
+procedure TfrmManager.FormActivate(Sender: TObject);
+begin
+  grpNewTeam.Hide;
+  ReadFromDatabase;
+  grp1.Hide;
+  grp2.Hide;
+  grp3.Hide;
+  grp4.Hide;
+  //dbGridTeam.Enabled := False;
+end;
+
+
+
+procedure TfrmManager.rgpFilterClick(Sender: TObject);
+begin
+  case rgpFilter.ItemIndex of
+    0 : Begin
+          dmTeams.tblTeams.Filter := 'TournamentsWon = 0';
+          dmTeams.tblTeams.Filtered := True;
+        End;
+    1 : Begin
+          dmTeams.tblTeams.Filter := 'GamesWon = 0';
+          dmTeams.tblTeams.Filtered := True;
+        End;
+    2 : Begin
+          dmTeams.tblTeams.Filtered := False;
+          dmTeams.tblTeams.Sort := '';
+
+          rgpSort.Visible := False;
+          rgpFilter.Visible := False;
+          btnMostTournamentsWon.Visible := False;
+          btnMostTournamentsEnt.Visible := False;
+          btnSearchForTeam.Visible := False;
+          btnShowStats.Visible := True;
+        End;
+  end;
+
+end;
+
+procedure TfrmManager.rgpSortClick(Sender: TObject);
+begin
+  case rgpSort.ItemIndex of
+    0 : Begin
+          dmTeams.tblTeams.Sort := 'TeamName ASC';
+        End;
+    1 : Begin
+          dmTeams.tblTeams.Sort := 'TeamName DESC';
+        End;
+    2 : Begin
+          dmTeams.tblTeams.Sort := 'GamesWon DESC';
+        End;
+    3 : Begin
+          dmTeams.tblTeams.Sort := 'TournamentsWon DESC';
+        End;
+    4 : Begin
+          dmTeams.tblTeams.Sort := 'TournamentsWon ASC';
+        End;
+    5 : Begin
+          dmTeams.tblTeams.Sort := 'TournamentsEntered DESC';
+        End;
+    6 : Begin
+          dmTeams.tblTeams.Sort := '';
+          rgpSort.ItemIndex := -1;
+          rgpSort.Visible := False;
+          rgpFilter.Visible := False;
+          btnMostTournamentsWon.Visible := False;
+          btnMostTournamentsEnt.Visible := False;
+          btnSearchForTeam.Visible := False;
+          btnShowStats.Visible := True;
+        End;
+  end;
+end;
+
+procedure TfrmManager.ReadFromDatabase;
+var
+  I: Integer;
+begin
+  if CheckIfTournamentInProgress = True then
+  Begin
+    dmFinals.tblFinals.Refresh;
+    dmSemiFinals.tblSemiFinals.Refresh;
+    dbGridTeam.Refresh;
+
+    if dmFinals.tblFinals.RecordCount = 0 then
+    Begin
+      TournamentDisplay.Lines.Clear;
+      TournamentDisplay.Lines.Add('The Tournament is in the Semi-Finals stages...');
+      TournamentDisplay.Lines.Add('The fixtures and scores:' +#13);
+
+      dmSemiFinals.tblSemiFinals.First;
+      if dmSemiFinals.tblSemiFinals.FieldByName('Score').AsInteger = 0 then
+      Begin
+        btnUpdateScores.Enabled := True;
+        btnNextRound.Enabled := False;
+
+        TournamentDisplay.Paragraph.TabCount := 5;
+        TournamentDisplay.Paragraph.Tab[0] := 10;
+        TournamentDisplay.Paragraph.Tab[1] := 50;
+        TournamentDisplay.Paragraph.Tab[2] := 150;
+        TournamentDisplay.Paragraph.Tab[3] := 250;
+        TournamentDisplay.Paragraph.Tab[4] := 350;
+
+        dmSemiFinals.tblSemiFinals.Filter := 'MatchNumber ASC';
+        dmSemiFinals.tblSemiFinals.First;
+
+        for I := 1 to 4 do
+        begin
+          sArrSemiFinalTeam[I] := dmSemiFinals.tblSemiFinals['TeamName'];
+          dmSemiFinals.tblSemiFinals.Next;
+        end;
+
+        TournamentDisplay.Lines.Add('Match' +#9+ 'Team One' +#9+ 'Score' +#9+ 'Team Two' +#9+ 'Score' +#13);
+        TournamentDisplay.Lines.Add(IntToStr(1) +#9+#9+ sArrSemiFinalTeam[1] +#9+ 'Has not been updated' +#9+ sArrSemiFinalTeam[2] +#9+ 'Has not been updated');
+        TournamentDisplay.Lines.Add(IntToStr(2) +#9+#9+ sArrSemiFinalTeam[3] +#9+ 'Has not been updated' +#9+ sArrSemiFinalTeam[4] +#9+ 'Has not been updated') ;
+
+      End
+      Else
+      Begin
+        btnUpdateScores.Enabled := True;
+        btnNextRound.Enabled := True;
+
+        TournamentDisplay.Paragraph.TabCount := 5;
+        TournamentDisplay.Paragraph.Tab[0] := 10;
+        TournamentDisplay.Paragraph.Tab[1] := 50;
+        TournamentDisplay.Paragraph.Tab[2] := 150;
+        TournamentDisplay.Paragraph.Tab[3] := 250;
+        TournamentDisplay.Paragraph.Tab[4] := 350;
+
+        dmSemiFinals.tblSemiFinals.Filter := 'MatchNumber ASC';
+        dmSemiFinals.tblSemiFinals.First;
+
+        for I := 1 to 4 do
+        begin
+          sArrSemiFinalTeam[I] := dmSemiFinals.tblSemiFinals['TeamName'];
+          iArrSemiFinalScore[I] := dmSemiFinals.tblSemiFinals['Score'];
+          dmSemiFinals.tblSemiFinals.Next;
+        end;
+
+        TournamentDisplay.Lines.Add('Match' +#9+ 'Team One' +#9+ 'Score' +#9+ 'Team Two' +#9+ 'Score' +#13);
+        TournamentDisplay.Lines.Add(IntToStr(1) +#9+#9+ sArrSemiFinalTeam[1] +#9+ IntToStr(iArrSemiFinalScore[1]) +#9+ sArrSemiFinalTeam[2] +#9+ IntToStr(iArrSemiFinalScore[2]));
+        TournamentDisplay.Lines.Add(IntToStr(2) +#9+#9+ sArrSemiFinalTeam[3] +#9+ IntToStr(iArrSemiFinalScore[3]) +#9+ sArrSemiFinalTeam[4] +#9+ IntToStr(iArrSemiFinalScore[4]));
+
+      End;
+
+    End
+    Else
+    Begin
+      TournamentDisplay.Lines.Clear;
+      TournamentDisplay.Lines.Add('The Tournament is in the Finals stage...');
+      TournamentDisplay.Lines.Add('The fixture and score:' +#13);
+
+      btnSubmitSemi.Enabled := False;
+      btnNextRound.Enabled := False;
+
+      dmFinals.tblFinals.First;
+
+      if dmFinals.tblFinals.FieldByName('Score').AsInteger = 0 then
+      Begin
+        btnUpdateScores.Enabled := True;
+
+        TournamentDisplay.Paragraph.TabCount := 4;
+        TournamentDisplay.Paragraph.Tab[0] := 50;
+        TournamentDisplay.Paragraph.Tab[1] := 100;
+        TournamentDisplay.Paragraph.Tab[2] := 200;
+        TournamentDisplay.Paragraph.Tab[3] := 300;
+
+        for I := 1 to 2 do
+        begin
+          sArrFinalTeam[I] := dmFinals.tblFinals['TeamName'];
+          dmFinals.tblFinals.Next;
+        end;
+
+        TournamentDisplay.Lines.Add('Team One' +#9+#9+ 'Score' +#9+ 'Team Two' +#9+ 'Score' +#13);
+        TournamentDisplay.Lines.Add(sArrFinalTeam[1] +#9+ 'Has not been updated' +#9+ sArrFinalTeam[2] +#9+ 'Has not been updated');
+      End
+      Else
+      Begin
+        btnUpdateScores.Enabled := False;
+        btnSubmitSemi.Enabled := False;
+        btnNextRound.Enabled := False;
+
+        TournamentDisplay.Paragraph.TabCount := 4;
+        TournamentDisplay.Paragraph.Tab[0] := 50;
+        TournamentDisplay.Paragraph.Tab[1] := 100;
+        TournamentDisplay.Paragraph.Tab[2] := 150;
+        TournamentDisplay.Paragraph.Tab[3] := 200;
+
+        for I := 1 to 2 do
+        begin
+          sArrFinalTeam[I] := dmFinals.tblFinals['TeamName'];
+          iArrFinalTeam[I] := dmFinals.tblFinals['Score'];
+          dmFinals.tblFinals.Next;
+        end;
+
+        btnSubmitFinals.Enabled := False;
+
+        TournamentDisplay.Lines.Add('Team One' +#9+#9+#9+ 'Score' +#9+ 'Team Two' +#9+#9+ 'Score' +#13);
+        TournamentDisplay.Lines.Add(sArrFinalTeam[1] +#9+#9+#9+ IntToStr(iArrFinalTeam[1]) +#9+ sArrFinalTeam[2] +#9+ IntToStr(iArrFinalTeam[2]) +#13);
+        TournamentDisplay.Lines.Add('The Winning team of the Tournament is ' + DetermineTournamentWinner + '! Congratulations to the winning team.');
+      End;
+
+    End;
+  End
+  Else
+  Begin
+    TournamentDisplay.Lines.Clear;
+    TournamentDisplay.Lines.Add('There is no Tournament in progress...');
+    btnUpdateScores.Enabled := False;
+  End;
+end;
+
+procedure TfrmManager.TeamUpdateStats(sTeamName: String; iScore: Integer);
+var
+  I: Integer;
+begin
+  dmTeams.tblTeams.First;
+
+  for I := 1 to dmTeams.tblTeams.RecordCount do
+  begin
+    if dmTeams.tblTeams['TeamName'] = sTeamName then
+    Begin
+      dmTeams.tblTeams.Edit;
+      dmTeams.tblTeams['MinigamesWon'] := dmTeams.tblTeams.FieldByName('MinigamesWon').AsInteger + iScore;
+      dmTeams.tblTeams['MinigamesLost'] := dmTeams.tblTeams.FieldByName('MinigamesLost').AsInteger + (12 - iScore);
+      dmTeams.tblTeams['TournamentsEntered'] := dmTeams.tblTeams.FieldByName('TournamentsEntered').AsInteger + 1;
+      dmTeams.tblTeams.Post;
+      Break
+    End;
+
+    dmTeams.tblTeams.Next;
+  end;
+end;
+
+end.

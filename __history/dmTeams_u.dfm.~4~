@@ -1,0 +1,38 @@
+object dmTeams: TdmTeams
+  OldCreateOrder = False
+  Height = 150
+  Width = 215
+  object conTeams: TADOConnection
+    Connected = True
+    ConnectionString = 
+      'Provider=Microsoft.ACE.OLEDB.12.0;User ID=Admin;Data Source=C:\U' +
+      'sers\Kailash\Desktop\Managing Thunee Phase 2\ManagingThunee.accd' +
+      'b;Mode=ReadWrite;Persist Security Info=False;Jet OLEDB:System da' +
+      'tabase="";Jet OLEDB:Registry Path="";Jet OLEDB:Database Password' +
+      '="";Jet OLEDB:Engine Type=6;Jet OLEDB:Database Locking Mode=1;Je' +
+      't OLEDB:Global Partial Bulk Ops=2;Jet OLEDB:Global Bulk Transact' +
+      'ions=1;Jet OLEDB:New Database Password="";Jet OLEDB:Create Syste' +
+      'm Database=False;Jet OLEDB:Encrypt Database=False;Jet OLEDB:Don'#39 +
+      't Copy Locale on Compact=False;Jet OLEDB:Compact Without Replica' +
+      ' Repair=False;Jet OLEDB:SFP=False;Jet OLEDB:Support Complex Data' +
+      '=False;Jet OLEDB:Bypass UserInfo Validation=False'
+    LoginPrompt = False
+    Mode = cmReadWrite
+    Provider = 'Microsoft.ACE.OLEDB.12.0'
+    Left = 96
+    Top = 16
+  end
+  object tblTeams: TADOTable
+    Active = True
+    Connection = conTeams
+    CursorType = ctStatic
+    TableName = 'TeamsTbl'
+    Left = 96
+    Top = 64
+  end
+  object dsTeams: TDataSource
+    DataSet = tblTeams
+    Left = 96
+    Top = 96
+  end
+end

@@ -1,0 +1,99 @@
+object frmAdmin: TfrmAdmin
+  Left = 0
+  Top = 0
+  Caption = 'Admin'
+  ClientHeight = 350
+  ClientWidth = 500
+  Color = clSilver
+  Font.Charset = ANSI_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -21
+  Font.Name = 'Microsoft Himalaya'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poDesktopCenter
+  PixelsPerInch = 96
+  TextHeight = 21
+  object DBGrid1: TDBGrid
+    Left = 0
+    Top = 47
+    Width = 505
+    Height = 106
+    DataSource = dmTeams.dsTeams
+    TabOrder = 0
+    TitleFont.Charset = ANSI_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -21
+    TitleFont.Name = 'Microsoft Himalaya'
+    TitleFont.Style = []
+  end
+  object grpAdmin: TGroupBox
+    Left = 0
+    Top = 159
+    Width = 505
+    Height = 194
+    Caption = 'Administrative Options'
+    Color = clSilver
+    ParentBackground = False
+    ParentColor = False
+    TabOrder = 1
+    object btnResetScoreboard: TButton
+      Left = 271
+      Top = 135
+      Width = 217
+      Height = 41
+      Caption = 'Reset The Scoreboard'
+      TabOrder = 0
+    end
+    object btnDeleteAManager: TButton
+      Left = 271
+      Top = 80
+      Width = 217
+      Height = 41
+      Caption = 'Delete a Manager'
+      TabOrder = 1
+    end
+    object btnAddANewManager: TButton
+      Left = 271
+      Top = 24
+      Width = 217
+      Height = 41
+      Caption = 'Add a new Manager'
+      TabOrder = 2
+    end
+    object btnAddNewTeam: TButton
+      Left = 16
+      Top = 24
+      Width = 217
+      Height = 41
+      Caption = 'Add a new Team'
+      TabOrder = 3
+    end
+    object btnDeleteTeam: TButton
+      Left = 16
+      Top = 136
+      Width = 217
+      Height = 41
+      Caption = 'Delete a Team'
+      TabOrder = 4
+    end
+    object btnChangeDetailsOfTeam: TButton
+      Left = 16
+      Top = 80
+      Width = 217
+      Height = 41
+      Caption = 'Change details of an existing Team'
+      TabOrder = 5
+    end
+  end
+  object pnlAdmin: TPanel
+    Left = 0
+    Top = 0
+    Width = 505
+    Height = 41
+    Caption = 'Admin Screen'
+    Color = clMedGray
+    ParentBackground = False
+    TabOrder = 2
+  end
+end

@@ -1,0 +1,279 @@
+unit Admin_u;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.DB, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.Grids, Vcl.DBGrids, dmTeams_u, dmPlayers_u, dmManagerDetails_u, Math;
+
+type
+  TfrmAdmin = class(TForm)
+    grpAdmin: TGroupBox;
+    pnlAdmin: TPanel;
+    btnResetScoreboard: TButton;
+    btnDeleteAManager: TButton;
+    btnAddANewManager: TButton;
+    btnAddNewTeam: TButton;
+    btnDeleteTeam: TButton;
+    btnChangeDetailsOfTeam: TButton;
+    grpTeams: TGroupBox;
+    grpManager: TGroupBox;
+    btnAmountTeams: TButton;
+    grpPlayer: TGroupBox;
+    btnAverageTournament: TButton;
+    btnAverageGame: TButton;
+    TeamGrid: TDBGrid;
+    PlayerGrid: TDBGrid;
+    ManagerGrid: TDBGrid;
+    rgpHideShow: TRadioGroup;
+    grpManagerOptions: TGroupBox;
+    btnAmountManagers: TButton;
+    grpTournamentAnalyses: TGroupBox;
+    grpTeamOptions: TGroupBox;
+    grpNewTeam: TGroupBox;
+    lblSurname: TLabel;
+    lblName: TLabel;
+    edtSurname: TEdit;
+    edtName: TEdit;
+    edtDOB: TEdit;
+    btnConfirm: TButton;
+    lblDOB: TLabel;
+    procedure rgpHideShowClick(Sender: TObject);
+    procedure btnAddNewTeamClick(Sender: TObject);
+    Function CheckIfTeamNameIsPresent (sLine : String) : Boolean;
+    procedure btnConfirmClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmAdmin: TfrmAdmin;
+  sP1Name, sP1Surname, sP1DOB : String;
+
+implementation
+
+{$R *.dfm}
+
+procedure TfrmAdmin.btnAddNewTeamClick(Sender: TObject);
+begin
+  if MessageDlg('When you add a new team to the database, you will be required to enter the details of two players as there are two players in a team, is this okay?', mtConfirmation, mbYesNo, 0)  = mrYes then
+  Begin
+    grpNewTeam.Enabled := True;
+    grpNewTeam.Show;
+    grpNewTeam.Caption := 'Player 1 Details';
+  End
+  else
+  Begin
+    grpNewTeam.Enabled := False;
+    grpNewTeam.Hide;
+    grpNewTeam.Caption := 'Adding a new Team';
+  End;
+end;
+
+procedure TfrmAdmin.btnConfirmClick(Sender: TObject);
+Var
+  bCheck : Boolean;
+  sP2Name, sP2Surname, sP2DOB, sP1ID, sP2ID, sTeamName, sTeamID : String;
+begin
+  if btnConfirm.Caption = 'Confirm Player 1 Details' then
+  Begin
+    sP1Name := edtName.Text;
+    sP1Surname := edtSurname.Text;
+    sP1DOB := edtDOB.Text;
+
+    if (sP1Name <> '') and (sP1Surname <> '') and (sP1DOB <> '') then
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      MessageDlg('Valid player information for player one has been provided successfully. Please enter the details for Player two.', mtInformation, mbOKCancel, 0);
+      grpNewTeam.Caption := 'Player 2 Details';
+      btnConfirm.Caption := 'Confirm Player 2 Details';
+    end
+    else
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      edtName.SetFocus;
+
+      MessageDlg('The details that you have entered have not been entered correctly, Please re-enter the Player details.', mtError, mbOKCancel, 0);
+    end;
+  End
+  else
+  begin
+    sP2Name := edtName.Text;
+    sP2Surname := edtSurname.Text;
+    sP2DOB := edtDOB.Text;
+
+    if (sP2Name <> '') and (sP2Surname <> '') and (sP2DOB <> '') then
+    Begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+
+      MessageDlg('Congratulations! Details for both players of the team has been entered correctly. Please be aware that automated Player IDs have been generated for both Players. You will now have to enter a Team Name.', mtInformation, mbOKCancel, 0);
+
+      if MessageDlg('Entering a Team Name is very important because once it is entered it can not be changed. Make sure that the team name is not the same as other team names. Do you accept the terms?', mtConfirmation, mbYesNo, 0) = mrYes then
+      Begin
+        sP1ID := sP1Name[1] + sP1Surname[1] + IntToStr(RandomRange(100, 1000));
+        sP2ID := sP2Name[1] + sP2Surname[1] + IntToStr(RandomRange(100, 1000));
+
+        sTeamName := InputBox('Team Name','Please input a unique Team Name for the new Team.','');
+        sTeamName := Trim(sTeamName);
+
+        if CheckIfTeamNameIsPresent(sTeamName) = True then
+        Begin
+          bCheck := True;
+
+          repeat
+            MessageDlg('The Team Name already exists in the database, Please enter a valid Team Name', mtError, mbOKCancel, 0);
+            sTeamName := InputBox('Team Name','Please input a unique Team Name for the new Team.','');
+            sTeamName := Trim(sTeamName);
+            bCheck := CheckIfTeamNameIsPresent(sTeamName);
+          until (bCheck = False);
+        End;
+
+        MessageDlg('Congratulations! The Team name is valid. The details of the Team will now be entered into the Database.', mtInformation, mbOKCancel, 0);
+
+        sTeamID := sTeamName[1] + sTeamName[Length(sTeamName)] + sTeamName[Length(sTeamName)-2] + IntToStr(RandomRange(100, 1000));
+
+        dmTeams.tblTeams.Last;
+        dmTeams.tblTeams.Insert;
+
+        dmTeams.tblTeams['TeamID'] := sTeamID;
+        dmTeams.tblTeams['TeamName'] := sTeamName;
+        dmTeams.tblTeams['GamesWon'] := 0;
+        dmTeams.tblTeams['MinigamesWon'] := 0;
+        dmTeams.tblTeams['MinigamesLost'] := 0;
+        dmTeams.tblTeams['TournamentsWon'] := 0;
+        dmTeams.tblTeams['TournamentsEntered'] := 0;
+        dmTeams.tblTeams['DateRegistered'] := Now;
+
+        dmTeams.tblTeams.Post;
+        grpNewTeam.Enabled := False;
+        btnConfirm.Caption := 'Confirm Player 1 Details';
+        grpNewTeam.Caption := 'Adding a new Team';
+        grpNewTeam.Enabled := False;
+        TeamGrid.Refresh;
+
+        dmPlayers.tblPlayers.Last;
+        dmPlayers.tblPlayers.Insert;
+
+        dmPlayers.tblPlayers['TeamName'] := sTeamName;
+        dmPlayers.tblPlayers['PlayerID'] := sP1ID;
+        dmPlayers.tblPlayers['PlayerName'] := sP1Name;
+        dmPlayers.tblPlayers['PlayerSurname'] := sP1Surname;
+        dmPlayers.tblPlayers['PlayerDOB'] := sP1DOB;
+
+        dmPlayers.tblPlayers.Post;
+
+        dmPlayers.tblPlayers.Insert;
+
+        dmPlayers.tblPlayers['TeamName'] := sTeamName;
+        dmPlayers.tblPlayers['PlayerID'] := sP2ID;
+        dmPlayers.tblPlayers['PlayerName'] := sP2Name;
+        dmPlayers.tblPlayers['PlayerSurname'] := sP2Surname;
+        dmPlayers.tblPlayers['PlayerDOB'] := sP2DOB;
+
+        dmPlayers.tblPlayers.Post;
+
+        MessageDlg('The Team has been added successfully!', mtInformation, mbOKCancel, 0);
+
+        grpNewTeam.Hide;
+      End
+      else
+      begin
+        MessageDlg('The team will not be entered into the database until a Team Name is entered. Please re-enter Team Details.', mtInformation, mbOKCancel, 0);
+        btnConfirm.Caption := 'Confirm Player 1 Details';
+        grpNewTeam.Caption := 'Adding a New Team';
+      end;
+
+    End
+    else
+    begin
+      edtName.Clear;
+      edtSurname.Clear;
+      edtDOB.Clear;
+      edtName.SetFocus;
+
+      MessageDlg('The details that you have entered have not been entered correctly, Please re-enter the Player details.', mtError, mbOKCancel, 0);
+    end;
+  end;
+
+
+end;
+
+function TfrmAdmin.CheckIfTeamNameIsPresent(sLine: String): Boolean;
+var
+  I: Integer;
+  bPresent : Boolean;
+begin
+  dmTeams.tblTeams.First;
+  bPresent := False;
+
+  while (bPresent = False) and (not dmTeams.tblTeams.Eof) do
+  Begin
+    if sLine = dmTeams.tblTeams['TeamName'] then
+    begin
+      bPresent := True;
+    end;
+
+    dmTeams.tblTeams.Next;
+  End;
+
+  dmTeams.tblTeams.First;
+
+  if bPresent = False then
+  Begin
+    Result := False;
+  End
+  else
+  Begin
+    Result := True;
+  End;
+end;
+
+procedure TfrmAdmin.rgpHideShowClick(Sender: TObject);
+begin
+  case rgpHideShow.ItemIndex of
+    0 : Begin
+          rgpHideShow.ItemIndex := -1;
+          if grpTeams.Visible = True then
+          Begin
+            grpTeams.Visible := False;
+          End
+          Else
+          Begin
+            grpTeams.Visible := True;
+          End;
+        End;
+    1 : Begin
+          rgpHideShow.ItemIndex := -1;
+          if grpPlayer.Visible = True then
+          Begin
+            grpPlayer.Visible := False;
+          End
+          Else
+          Begin
+            grpPlayer.Visible := True;
+          End;
+        End;
+    2 : Begin
+          rgpHideShow.ItemIndex := -1;
+          if grpManager.Visible = True then
+          Begin
+            grpManager.Visible := False;
+          End
+          Else
+          Begin
+            grpManager.Visible := True;
+          End;
+        End;
+  end;
+end;
+
+end.

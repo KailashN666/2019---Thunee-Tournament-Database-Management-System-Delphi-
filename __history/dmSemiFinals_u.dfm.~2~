@@ -1,0 +1,30 @@
+object dmSemiFinals: TdmSemiFinals
+  OldCreateOrder = False
+  Height = 150
+  Width = 215
+  object conSemiFinals: TADOConnection
+    Connected = True
+    ConnectionString = 
+      'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\Kailash\D' +
+      'esktop\Managing Thunee Phase 2\ManagingThunee.accdb;Mode=ReadWri' +
+      'te;Persist Security Info=False'
+    LoginPrompt = False
+    Mode = cmReadWrite
+    Provider = 'Microsoft.ACE.OLEDB.12.0'
+    Left = 88
+    Top = 8
+  end
+  object dsSemiFinals: TDataSource
+    DataSet = tblSemiFinals
+    Left = 88
+    Top = 104
+  end
+  object tblSemiFinals: TADOTable
+    Active = True
+    Connection = conSemiFinals
+    CursorType = ctStatic
+    TableName = 'SemiFinals'
+    Left = 88
+    Top = 56
+  end
+end
