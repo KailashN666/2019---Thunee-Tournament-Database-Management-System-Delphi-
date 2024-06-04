@@ -1,0 +1,1 @@
+This project is a Delphi-coded database management system designed specifically for Thunee tournaments. Thunee is a unique South African card game developed by the local Indian community. The program features an intelligent login page to manage user access and provides a user-friendly interface for managing Thunee tournament data.
